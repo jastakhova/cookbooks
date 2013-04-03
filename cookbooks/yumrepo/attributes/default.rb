@@ -17,4 +17,4 @@
 # limitations under the License.
 #
 
-default[:yumrepo][:key_path] = "/etc/pki/rpm-gpg"
+default['repo']['key_path'] = "/etc/pki/rpm-gpg"

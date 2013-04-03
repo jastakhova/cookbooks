@@ -9,7 +9,7 @@ version          "0.0.4"
   supports os
 end
 
-%w{ openssl mysql tomcat haproxy }.each do |cb|
+%w{ openssl mysql tomcat haproxy database maven }.each do |cb|
   depends cb
 end
 

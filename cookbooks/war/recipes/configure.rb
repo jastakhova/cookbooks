@@ -1,14 +1,9 @@
 
-execute "rm app dir" do
-  command "rm -rf /tmp/app"
-  action :run
+directory "/tmp/app" do
+  recursive true
+  action :delete
 end
 
-remote_file 'download configure' do
-  path '/tmp/configure.properties.erb'
-  source node['configure']['source']
-  mode '0777'
-end
 
 dirname = File.dirname(node['configure']['to'])
 
@@ -21,8 +16,7 @@ directory "/tmp/app/WEB-INF/#{dirname}" do
 end
 
 template "/tmp/app/WEB-INF/#{node['configure']['to']}" do
-  local true
-  source "/tmp/configure.properties.erb"
+  source "database.properties.erb"
   owner "root"
   group "root"
   mode "0600"
@@ -31,9 +25,12 @@ template "/tmp/app/WEB-INF/#{node['configure']['to']}" do
   )
 end
 
-execute "copy app.war to app.final.war" do
-  command "rm -rf /tmp/app.final.war; cp /tmp/app.war /tmp/app.final.war"
-  action :run
+file "/tmp/app.final.war" do
+  action :delete
+end
+
+file "/tmp/app.final.war" do
+  content IO.read("/tmp/app.war")
 end
 
 package "zip" do
@@ -48,7 +45,7 @@ end
 # Creating tomcat context xml
 
 template '/tmp/app.xml' do
-  source 'jpetstore-context.xml.erb'
+  source 'context.xml.erb'
   owner 'root'
   group 'root'
   mode '0777'

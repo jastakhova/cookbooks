@@ -16,39 +16,28 @@ if not node['war']['deploy']['url'].empty?
     mode '0777'
   end
 elsif not node['war']['deploy']['git']['url'].empty?
-  execute "clear" do
-    command "rm -rf /tmp/app"
-    action :run
+  directory "/tmp/app" do
+    recursive true
+    action :delete
   end
 
   case node[:platform]
   when "debian", "ubuntu"
-    package "git-core" do
-      action :install
-    end
+    package "git-core"
   else
-    package "git" do
-      action :install
-    end
+    package "git"
   end
 
-  git "/tmp/app" do 
+  git "/tmp/app" do
     repository node['war']['deploy']['git']['url']
     reference node['war']['deploy']['git']['revision']
     action :sync
   end
 
-  package "maven2" do
-    action :install
-  end
+  include_recipe "maven::maven2"
 
   execute "package" do
-    command "cd /tmp/app; mvn clean package"
-    action :run
-  end
-
-  execute "move" do 
-    command "cd /tmp/app; cp target/*.war /tmp/app.war; rm -rf /tmp/app"
+    command "cd /tmp/app; mvn clean package && cp /tmp/app/target/*.war /tmp/app.war"
     action :run
   end
 end
@@ -57,7 +46,7 @@ end
 # Creating tomcat context xml
 
 template '/tmp/app.xml' do
-  source 'jpetstore-context.xml.erb'
+  source 'context.xml.erb'
   owner 'root'
   group 'root'
   mode '0777'

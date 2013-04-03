@@ -19,6 +19,18 @@
 
 include_recipe "java"
 
+if (platform?("centos") && node['platform_version'].to_i < 6)
+  execute "yum clean all" do
+    action :nothing
+  end
+
+  remote_file "/etc/yum.repos.d/jpackage50.repo" do
+    source "http://www.jpackage.org/jpackage50.repo"
+    mode 00644
+    notifies :run, resources(:execute => "yum clean all"), :immediately
+  end
+end
+
 tomcat_pkgs = value_for_platform(
   ["debian","ubuntu"] => {
     "default" => ["tomcat6","tomcat6-admin"]
@@ -42,7 +54,8 @@ service "tomcat" do
   when "debian","ubuntu"
     supports :restart => true, :reload => true, :status => true
   end
-  action [:enable, :start]
+  #http://tickets.opscode.com/browse/COOK-1599
+  action [:enable]
 end
 
 case node["platform"]

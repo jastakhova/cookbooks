@@ -18,22 +18,22 @@
 # limitations under the License.
 #
 
-if not node[:repo][:vmware][:enabled]
+unless node['repo']['vmware']['enabled']
   yum_repository "vmware-tools" do
     action :remove
   end
   return
 end
 
-yum_key "VMWARE-PACKAGING-GPG-KEY" do
-  url "http://packages.vmware.com/tools/VMWARE-PACKAGING-GPG-KEY.pub"
+yum_key node['repo']['vmware']['key'] do
+  url node['repo']['vmware']['key_url']
   action :add
 end
 
 yum_repository "vmware-tools" do
   description "VMware Tools"
-  key "VMWARE-PACKAGING-GPG-KEY"
-  url "http://packages.vmware.com/tools/esx/#{node[:repo][:vmware][:release]}/rhel#{node[:platform_version].to_i}/$basearch"
+  key node['repo']['vmware']['key']
+  url node['repo']['vmware']['url'] 
   action :add
 end
 
@@ -48,19 +48,18 @@ execute "/usr/bin/vmware-uninstall-tools.pl" do
   only_if {File.exists?("/usr/bin/vmware-uninstall-tools.pl")}
 end
 
-node[:repo][:vmware][:required_packages].each do |vmware_pkg|
+node['repo']['vmware']['required_packages'].each do |vmware_pkg|
   package vmware_pkg
 end
 
-service "vmware-tools" do
-  supports :status => true, :restart => true
-  action [ :enable, :start ]
-end
-
-if node[:repo][:vmware][:install_optional]
-  node[:repo][:vmware][:optional_packages].each do |optional_pkg|
-    package optional_pkg
+node['repo']['vmware']['services'].each do |vmware_svc|
+  service vmware_svc do
+    action [ :enable, :start ]
   end
 end
 
-# vim: ai et sts=2 sw=2 ts=2
+node['repo']['vmware']['optional_packages'].each do |optional_pkg|
+  package optional_pkg do
+    only_if { node['repo']['vmware']['install_optional'] }
+  end
+end

@@ -18,23 +18,14 @@
 # limitations under the License.
 #
 
-base_url = "http://download.fedora.redhat.com/pub/epel"
-
-if node[:platform_version].to_i <= 5
-  epel_key = "RPM-GPG-KEY-EPEL"
-elsif node[:platform_version].to_i == 6
-  epel_key = "RPM-GPG-KEY-EPEL6"
-end
-
-yum_key epel_key do
-  url "#{base_url}/#{epel_key}"
+yum_key node['repo']['epel']['key'] do
+  url  node['repo']['epel']['key_url']
   action :add
 end
 
 yum_repository "epel" do
   description "Extra Packages for Enterprise Linux"
-  key epel_key
-  url "http://mirrors.fedoraproject.org/mirrorlist?repo=epel-#{node[:platform_version].split('.')[0]}&arch=$basearch"
-  mirrorlist true
+  key node['repo']['epel']['key']
+  mirrorlist node['repo']['epel']['url']
   action :add
 end

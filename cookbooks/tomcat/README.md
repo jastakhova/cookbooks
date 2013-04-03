@@ -9,7 +9,7 @@ Requirements
 Platform:
 
 * Debian, Ubuntu (OpenJDK, Oracle)
-* CentOS 6+, Red Hat 6+, Fedora (OpenJDK, Oracle)
+* CentOS 6+, Red Hat 6+, Fedora (OpenJDK, Oracle), also tested for CentOS 5.6 (682751881015/CentOS-5.6-i386-1.0)
 
 The following Opscode cookbooks are dependencies:
 
@@ -41,10 +41,29 @@ example for a java app server role:
       }
     )
 
+Managing Tomcat Users
+=====================
+
+The recipe `tomcat::users` included in this cookbook is used for managing Tomcat users. The recipe adds users and roles to the `tomcat-users.xml` conf file.
+
+Users are defined by creating a `tomcat_users` data bag and placing [Encrypted Data Bag Items](http://wiki.opscode.com/display/chef/Encrypted+Data+Bags) in that data bag. Each encrypted data bag item requires an 'id', 'password', and a 'roles' field.
+
+    {
+      "id": "reset",
+      "password": "supersecret",
+      "roles": [
+        "manager",
+        "admin"
+      ]
+    }
+
+If you are a Chef Solo user the data bag items are not required to be encrypted and should not be.
+
 License and Author
 ==================
 
 Author:: Seth Chisamore (<schisamo@opscode.com>)
+Author:: Jamie Winsor (<jamie@vialstudios.com>)
 
 Copyright:: 2010-2012, Opscode, Inc
 

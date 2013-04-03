@@ -35,21 +35,15 @@ case platform
 end
 
 default['war']['deploy']['git']['url'] = ""
-default['war']['deploy']['git']['revision'] = ""
+default['war']['deploy']['git']['revision'] = "HEAD"
 default['war']['deploy']['url'] = ""
+
 default['database']['hosts'] = ["127.0.0.1"]
 default['database']['port'] = "3306"
-default['database']['name'] = "jpetstore"
-default['database']['username'] = "jpetstore"
-default['database']['password'] = "jpetstore"
-default['database']['schema'] = "https://raw.github.com/dieu/petstore/master/db/mysql/jpetstore-mysql-schema.sql"
-default['database']['data'] = "https://raw.github.com/dieu/petstore/master/db/mysql/jpetstore-mysql-dataload.sql"
+
 default['haproxy']['enable_admin'] = true
 default['haproxy.rebalance']['nodes'] = ["localhost"]
-default['configure']['source'] = "https://raw.github.com/dieu/petstore/master/db/mysql/jpetstore-database.properties.erb"
+
 default['configure']['to'] = "jdbc.properties"
 default['configure']['variables']['hosts'] = ['127.0.0.1']
 default['configure']['variables']['port'] = "3306"
-default['configure']['variables']['database'] = "jpetstore"
-default['configure']['variables']['username'] = "jpetstore"
-default['configure']['variables']['password'] = "jpetstore"

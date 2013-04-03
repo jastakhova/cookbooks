@@ -1,8 +1,9 @@
 #
 # Cookbook Name:: haproxy
+#
 # Recipe:: default
 #
-# Copyright 2009, Opscode, Inc.
+# Copyright 2012, Rackspace US, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +18,25 @@
 # limitations under the License.
 #
 
-package "haproxy" do
-  action :install
+::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
+
+if (platform?("centos") && node['platform_version'].to_i < 6)
+  include_recipe "yumrepo::default"
+end
+
+platform_options = node["haproxy"]["platform"]
+
+if node["developer_mode"]
+  node.set_unless["haproxy"]["admin_password"] = "password"
+else
+  node.set_unless["haproxy"]["admin_password"] = secure_password
+end
+
+platform_options["haproxy_packages"].each do |pkg|
+  package pkg do
+    action :install
+    options platform_options["package_options"]
+  end
 end
 
 template "/etc/default/haproxy" do
@@ -26,11 +44,34 @@ template "/etc/default/haproxy" do
   owner "root"
   group "root"
   mode 0644
+  only_if { platform?("ubuntu","debian") }
+end
+
+directory "/etc/haproxy/haproxy.d" do
+  mode 0655
+  owner "root"
+  group "root"
+end
+
+cookbook_file "/etc/init.d/haproxy" do
+  if platform?(%w{fedora redhat centos})
+    source "haproxy-init-rhel"
+  end
+  if platform?(%w{ubuntu debian})
+   source "haproxy-init-ubuntu"
+  end
+
+  mode 0655
+  owner "root"
+  group "root"
 end
 
 service "haproxy" do
-  supports :restart => true, :status => true, :reload => true
-  action [:enable, :start]
+  service_name platform_options["haproxy_service"]
+  supports :status => true, :restart => true, :reload => true
+  action [ :enable ]
+  retries 5
+  retry_delay 5
 end
 
 template "/etc/haproxy/haproxy.cfg" do
@@ -38,5 +79,9 @@ template "/etc/haproxy/haproxy.cfg" do
   owner "root"
   group "root"
   mode 0644
-  notifies :restart, "service[haproxy]"
+  variables(
+    "admin_port"     => node["haproxy"]["admin_port"],
+    "admin_password" => node["haproxy"]["admin_password"]
+  )
+  notifies :restart, resources(:service => "haproxy"), :immediately
 end

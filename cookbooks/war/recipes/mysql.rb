@@ -1,39 +1,25 @@
-
-::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
-
-remote_file 'mysql schema' do
-  path '/tmp/database.schema.sql'
-  source node['database']['schema']
-  mode '0777'
+# http://ry4an.org/unblog/post/chef_mysql_database_vagrant/
+%w{mysql-client libmysqlclient-dev make}.each do |pack|
+  package pack do
+    action :nothing
+  end.run_action(:install)
 end
-
-remote_file 'database data' do
-  path '/tmp/database.data.sql'
-  source node['database']['data']
-  mode '0777'
+g = chef_gem "mysql" do
+      action :nothing
 end
+g.run_action(:install)
 
-template "/tmp/petstore-grants.sql" do
-  source "jpetstore-mysql-grants.sql.erb"
-  owner "root"
-  group "root"
-  mode "0600"
-  variables(
-    :user     => node['database']['username'],
-    :password => node['database']['password'],
-    :database => node['database']['name']
-  )
-end
+include_recipe "database::mysql"
 
-execute "database-install-privileges" do
-  command "/usr/bin/mysql -u root -p\"#{node['mysql']['server_root_password']}\" < /tmp/petstore-grants.sql"
-  action :run
-end
 
-execute "create #{node['database']['name']} database" do
-  command "/usr/bin/mysqladmin -u root -p\"#{node['mysql']['server_root_password']}\" create #{node['database']['name']}"
-  creates "/var/lib/mysql/#{node['database']['name']}"
-  notifies :create, "ruby_block[save node data]", :immediately unless Chef::Config[:solo]
+#create database
+mysql_connection_info = {:host => "localhost",
+                         :username => 'root',
+                         :password => node['mysql']['server_root_password']}
+
+mysql_database node['database']['name'] do
+  connection mysql_connection_info
+  action :create
 end
 
 # save node data after writing the MYSQL root password, so that a failed chef-client run that gets this far doesn't cause an unknown password to get applied to the box without being saved in the node data.
@@ -46,12 +32,45 @@ unless Chef::Config[:solo]
   end
 end
 
-execute "create-scheme" do
-  command "/usr/bin/mysql -u root -p\"#{node['mysql']['server_root_password']}\" < /tmp/database.schema.sql"
-  action :run
+#create user and grant provileges
+mysql_database_user node['database']['username'] do
+  connection mysql_connection_info
+  password node['database']['password']
+  host '%'
+  action :create
 end
 
-execute "load-data" do
-  command "/usr/bin/mysql -u root -p\"#{node['mysql']['server_root_password']}\" < /tmp/database.data.sql"
-  action :run
+mysql_database_user node['database']['username'] do
+  connection mysql_connection_info
+  password node['database']['password']
+  database_name node['database']['name']
+  host '%'
+  action :grant
+end
+
+mysql_database "flush the privileges" do
+  connection mysql_connection_info
+  sql "flush privileges"
+  action :query
+end
+
+#load schema and data
+require 'net/http'
+require 'net/https'
+
+[node['database']['schema'], node['database']['data']].each do |script|
+  mysql_database node['database']['name'] do
+    connection mysql_connection_info
+    # this part could be just "sql { Net::HTTP.get(script) }" for ruby 2.0
+    sql { parsed = URI.parse(script)
+          http = Net::HTTP.new(parsed.host, parsed.port)
+          if script.include?("https")
+            http.use_ssl = true
+            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+          end
+          resp = http.start { |cx| cx.request(Net::HTTP::Get.new(script)) }
+          resp.body
+        }
+    action :query
+  end
 end
