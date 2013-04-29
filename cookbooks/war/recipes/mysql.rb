@@ -1,13 +1,18 @@
-# http://ry4an.org/unblog/post/chef_mysql_database_vagrant/
-%w{mysql-client libmysqlclient-dev make}.each do |pack|
-  package pack do
-    action :nothing
-  end.run_action(:install)
-end
-g = chef_gem "mysql" do
-      action :nothing
-end
-g.run_action(:install)
+case node[:platform]
+  when "ubuntu"
+    # http://ry4an.org/unblog/post/chef_mysql_database_vagrant/
+    %w{mysql-client(!!!mysql!!!) libmysqlclient-dev(mysql-devel) make}.each do |pack|
+      package pack do
+        action :nothing
+      end.run_action(:install)
+    end
+    g = chef_gem "mysql" do
+          action :nothing
+    end
+    g.run_action(:install)
+  else
+    package "mysql"
+  end
 
 include_recipe "database::mysql"
 
