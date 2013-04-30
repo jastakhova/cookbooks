@@ -31,4 +31,11 @@ listen application 0.0.0.0:<%= node["haproxy"]["incoming_port"] %>
 listen admin 0.0.0.0:22002
   mode http
   stats uri /
+
+  #for http://www.formilux.org/archives/haproxy/0803/0796.html
+  <% if node['platform'] == "centos" && node['platform_version'].to_f < 5.3 -%>
+  balance source
+  server stat-server 127.0.0.1:4002
+  <% end -%>
+
 <% end -%>

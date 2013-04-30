@@ -24,6 +24,26 @@ elsif not node['war']['deploy']['git']['url'].empty?
   case node[:platform]
   when "debian", "ubuntu"
     package "git-core"
+  when "centos"
+    if node[:platform_version].to_i < 6
+    #http://stackoverflow.com/questions/3779274/how-can-git-be-installed-on-centos-5-5
+      remote_file 'latest.rpm' do
+        path '/tmp/latest.rpm'
+        source "http://repo.webtatic.com/yum/centos/5/latest.rpm"
+      end
+
+      package "webstatic" do
+        source "/tmp/latest.rpm"
+        options("--nogpgcheck -y")
+      end
+
+      #because of http://tickets.opscode.com/browse/CHEF-2427 not yet merged into version 10.16.2 we use
+      execute "install git-all" do
+        command "yum install -y --enablerepo=webtatic git"
+      end
+    else
+      package "git"
+    end
   else
     package "git"
   end
@@ -38,7 +58,6 @@ elsif not node['war']['deploy']['git']['url'].empty?
 
   execute "package" do
     command "cd /tmp/app; mvn clean package && cp /tmp/app/target/*.war /tmp/app.war"
-    action :run
   end
 end
 

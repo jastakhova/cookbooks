@@ -1,7 +1,7 @@
 case node[:platform]
   when "ubuntu"
     # http://ry4an.org/unblog/post/chef_mysql_database_vagrant/
-    %w{mysql-client(!!!mysql!!!) libmysqlclient-dev(mysql-devel) make}.each do |pack|
+    %w{mysql-client libmysqlclient-dev make}.each do |pack|
       package pack do
         action :nothing
       end.run_action(:install)
@@ -77,5 +77,6 @@ require 'net/https'
           resp.body
         }
     action :query
+    retries 3
   end
 end

@@ -239,7 +239,7 @@ innodb_log_buffer_size  = <%= node['mysql']['tunable']['innodb_log_buffer_size']
 innodb_adaptive_flushing  = <%= node['mysql']['tunable']['innodb_adaptive_flushing'] %>
 <%- end %>
 
-<% if @skip_federated %>
+<% if @skip_federated && !(node['platform'] == "centos" && node['platform_version'].to_f < 5.3) %>
 #
 # * Federated
 #
