@@ -20,14 +20,23 @@
 include_recipe "java"
 
 if (platform?("centos") && node['platform_version'].to_i < 6)
-  execute "yum clean all" do
+  execute "yum-makecache" do
+    command "yum -q makecache"
+    action :nothing
+  end
+
+  ruby_block "reload-internal-yum-cache" do
+    block do
+      Chef::Provider::Package::Yum::YumCache.instance.reload
+    end
     action :nothing
   end
 
   remote_file "/etc/yum.repos.d/jpackage50.repo" do
     source "http://www.jpackage.org/jpackage50.repo"
     mode 00644
-    notifies :run, resources(:execute => "yum clean all"), :immediately
+    notifies :run, "execute[yum-makecache]", :immediately
+    notifies :create, "ruby_block[reload-internal-yum-cache]", :immediately
   end
 end
 
